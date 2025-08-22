@@ -1,0 +1,57 @@
+{
+  "name": "revenium-middleware-google-nodejs",
+  "version": "0.1.0",
+  "description": "A middleware library for metering and monitoring Google AI services usage in Node.js applications",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean"
+  },
+  "keywords": [
+    "revenium",
+    "middleware",
+    "google",
+    "ai",
+    "gemini",
+    "vertex-ai",
+    "metering",
+    "monitoring",
+    "typescript"
+  ],
+  "author": "Revenium Team",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@google/generative-ai": "^0.2.1",
+    "@google-cloud/aiplatform": "^4.0.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "rimraf": "^5.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/revenium/revenium-middleware-google-nodejs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/revenium/revenium-middleware-google-nodejs/issues"
+  },
+  "homepage": "https://github.com/revenium/revenium-middleware-google-nodejs#readme"
+}
