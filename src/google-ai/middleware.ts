@@ -26,10 +26,18 @@ const REVENIUM_BASE_URL =
 // Stream tracking storage
 const streamTrackers = new Map<string, StreamTracker>();
 
+// Track if middleware has been initialized to avoid double initialization
+let middlewareInitialized = false;
+
 /**
  * Initialize Google AI SDK middleware.
  */
 function initializeGoogleAIMiddleware(): void {
+  if (middlewareInitialized) {
+    console.log("🔍 [DEBUG] Middleware already initialized, skipping...");
+    return;
+  }
+
   if (!REVENIUM_API_KEY) {
     logger.warning(
       "REVENIUM_METERING_API_KEY not found - metering will be disabled"
@@ -38,12 +46,28 @@ function initializeGoogleAIMiddleware(): void {
   }
 
   try {
-    // Get the GoogleGenerativeAI class
-    const { GoogleGenerativeAI } = require("@google/generative-ai");
+    // Get the GoogleGenerativeAI class - try different import strategies
+    let GoogleGenerativeAI;
+
+    try {
+      // First try require (for CommonJS/dynamic imports)
+      GoogleGenerativeAI = require("@google/generative-ai").GoogleGenerativeAI;
+    } catch (error) {
+      // If require fails, the module might be imported as ES module
+      console.log("🔍 [DEBUG] require failed, trying module.exports...");
+      const moduleExports = require("@google/generative-ai");
+      GoogleGenerativeAI =
+        moduleExports.GoogleGenerativeAI ||
+        moduleExports.default?.GoogleGenerativeAI;
+    }
 
     if (!GoogleGenerativeAI) {
       throw new Error("GoogleGenerativeAI class not found");
     }
+
+    console.log(
+      "🔍 [DEBUG] GoogleGenerativeAI class found, setting up middleware..."
+    );
 
     // Store original methods
     const originalGetGenerativeModel =
@@ -51,16 +75,30 @@ function initializeGoogleAIMiddleware(): void {
     const originalGetEmbeddingModel =
       GoogleGenerativeAI.prototype.getEmbeddingModel;
 
+    console.log(
+      "🔍 [DEBUG] Original methods stored, overriding getGenerativeModel..."
+    );
+
+    // Mark as initialized
+    middlewareInitialized = true;
+
     // Override getGenerativeModel method
     GoogleGenerativeAI.prototype.getGenerativeModel = function (options: any) {
+      console.log(
+        "🔍 [DEBUG] getGenerativeModel called with options:",
+        options
+      );
       const model = originalGetGenerativeModel.call(this, options);
 
       // Store original methods
       const originalGenerateContent = model.generateContent;
       const originalGenerateContentStream = model.generateContentStream;
 
+      console.log("🔍 [DEBUG] Overriding generateContent method...");
+
       // Override generateContent method
       model.generateContent = async function (request: any) {
+        console.log("🔍 [DEBUG] generateContent intercepted by middleware!");
         const startTime = new Date();
         const transactionId = generateTransactionId();
         const usageMetadata = extractUsageMetadata(request, this);
@@ -298,6 +336,7 @@ async function handleStreamCompletion(
       outputTokens: 0,
       totalTokens: 0,
     };
+    console.log("hola");
 
     // Send metering data
     await sendMeteringData(
@@ -334,5 +373,68 @@ async function handleStreamCompletion(
   }
 }
 
-// Auto-initialize middleware when module is imported
-initializeGoogleAIMiddleware();
+// Export the function so it can be manually called
+export { initializeGoogleAIMiddleware };
+
+// Lazy initialization - intercept GoogleGenerativeAI constructor
+function lazyInitializeMiddleware() {
+  try {
+    const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+    if (!GoogleGenerativeAI || middlewareInitialized) {
+      return;
+    }
+
+    console.log(
+      "🔍 [DEBUG] Lazy initializing middleware on first GoogleGenerativeAI instantiation..."
+    );
+
+    // Store original constructor
+    const OriginalGoogleGenerativeAI = GoogleGenerativeAI;
+
+    // Override constructor to trigger middleware initialization
+    function InterceptedGoogleGenerativeAI(...args: any[]) {
+      console.log(
+        "🔍 [DEBUG] GoogleGenerativeAI constructor called, initializing middleware..."
+      );
+
+      // Initialize middleware if not already done
+      if (!middlewareInitialized) {
+        initializeGoogleAIMiddleware();
+      }
+
+      // Call original constructor
+      return new OriginalGoogleGenerativeAI(...args);
+    }
+
+    // Copy prototype and static properties
+    InterceptedGoogleGenerativeAI.prototype =
+      OriginalGoogleGenerativeAI.prototype;
+    Object.setPrototypeOf(
+      InterceptedGoogleGenerativeAI,
+      OriginalGoogleGenerativeAI
+    );
+
+    // Replace in module cache
+    const moduleCache = require.cache[require.resolve("@google/generative-ai")];
+    if (moduleCache) {
+      moduleCache.exports.GoogleGenerativeAI = InterceptedGoogleGenerativeAI;
+      moduleCache.exports = {
+        ...moduleCache.exports,
+        GoogleGenerativeAI: InterceptedGoogleGenerativeAI,
+      };
+    }
+
+    console.log(
+      "🔍 [DEBUG] GoogleGenerativeAI constructor intercepted successfully"
+    );
+  } catch (error) {
+    console.log("🔍 [DEBUG] Could not set up lazy initialization:", error);
+  }
+}
+
+// Set up lazy initialization
+lazyInitializeMiddleware();
+
+// Auto-initialize middleware when module is imported (fallback)
+// initializeGoogleAIMiddleware();

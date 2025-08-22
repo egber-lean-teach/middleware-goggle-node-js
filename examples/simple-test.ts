@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /**
- * 🤖 Revenium Google AI Middleware - Simple Test Examples
+ * Revenium Google AI Middleware - Simple Test Examples
  *
  * This script demonstrates basic usage of the Revenium middleware with both
  * Google AI SDK (Gemini Developer API) and Vertex AI SDK.
@@ -10,11 +10,6 @@
  * - Enhanced tracking with metadata
  * - Automatic provider detection
  * - Error handling and debugging
- *
- * Requirements:
- * - REVENIUM_METERING_API_KEY environment variable
- * - For Google AI: GOOGLE_API_KEY
- * - For Vertex AI: GOOGLE_CLOUD_PROJECT and authentication
  */
 
 import { config } from "dotenv";
@@ -24,7 +19,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 config();
 
 async function googleAIBasicExample(): Promise<boolean> {
-  /**🔄 Zero-Config Integration with Google AI SDK*/
   console.log("\n🤖 Google AI SDK - Basic Example");
   console.log("=".repeat(50));
 

@@ -10,7 +10,7 @@ export async function sendMeteringData(
   baseUrl: string = "https://api.revenium.io/meter/v2"
 ): Promise<void> {
   try {
-    const response = await fetch(`${baseUrl}/completions`, {
+    const response = await fetch(`${baseUrl}/ai/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
