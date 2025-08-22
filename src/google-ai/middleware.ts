@@ -38,11 +38,12 @@ function initializeGoogleAIMiddleware(): void {
     return;
   }
 
+  // Always initialize middleware, even without API key
   if (!REVENIUM_API_KEY) {
     logger.warning(
-      "REVENIUM_METERING_API_KEY not found - metering will be disabled"
+      "REVENIUM_METERING_API_KEY not found - metering will be disabled but middleware will still intercept calls"
     );
-    return;
+    // Don't return - continue with middleware setup
   }
 
   try {
@@ -118,24 +119,35 @@ function initializeGoogleAIMiddleware(): void {
           const endTime = new Date();
           const duration = calculateDurationMs(startTime, endTime);
 
-          // Send metering data
-          await sendMeteringData(
-            createMeteringRequest(
-              transactionId,
-              modelName,
-              tokenCounts,
-              stopReason,
-              formatTimestamp(startTime),
-              formatTimestamp(endTime),
-              duration,
-              OperationType.CHAT,
-              false,
-              0,
-              usageMetadata
-            ),
-            REVENIUM_API_KEY,
-            REVENIUM_BASE_URL
-          );
+          // Send metering data (only if API key is available)
+          if (REVENIUM_API_KEY) {
+            try {
+              await sendMeteringData(
+                createMeteringRequest(
+                  transactionId,
+                  modelName,
+                  tokenCounts,
+                  stopReason,
+                  formatTimestamp(startTime),
+                  formatTimestamp(endTime),
+                  duration,
+                  OperationType.CHAT,
+                  false,
+                  0,
+                  usageMetadata
+                ),
+                REVENIUM_API_KEY,
+                REVENIUM_BASE_URL
+              );
+            } catch (error) {
+              logger.warning(
+                "Failed to send metering data, but continuing with response",
+                { error }
+              );
+            }
+          } else {
+            logger.debug("Skipping metering data send - no API key available");
+          }
 
           logger.debug("Google AI generateContent metering completed", {
             transactionId,
@@ -260,24 +272,35 @@ function initializeGoogleAIMiddleware(): void {
           const endTime = new Date();
           const duration = calculateDurationMs(startTime, endTime);
 
-          // Send metering data
-          await sendMeteringData(
-            createMeteringRequest(
-              transactionId,
-              modelName,
-              tokenCounts,
-              stopReason,
-              formatTimestamp(startTime),
-              formatTimestamp(endTime),
-              duration,
-              OperationType.EMBED,
-              false,
-              0,
-              usageMetadata
-            ),
-            REVENIUM_API_KEY,
-            REVENIUM_BASE_URL
-          );
+          // Send metering data (only if API key is available)
+          if (REVENIUM_API_KEY) {
+            try {
+              await sendMeteringData(
+                createMeteringRequest(
+                  transactionId,
+                  modelName,
+                  tokenCounts,
+                  stopReason,
+                  formatTimestamp(startTime),
+                  formatTimestamp(endTime),
+                  duration,
+                  OperationType.EMBED,
+                  false,
+                  0,
+                  usageMetadata
+                ),
+                REVENIUM_API_KEY,
+                REVENIUM_BASE_URL
+              );
+            } catch (error) {
+              logger.warning(
+                "Failed to send metering data, but continuing with response",
+                { error }
+              );
+            }
+          } else {
+            logger.debug("Skipping metering data send - no API key available");
+          }
 
           logger.debug("Google AI embedContent metering completed", {
             transactionId,
@@ -336,26 +359,36 @@ async function handleStreamCompletion(
       outputTokens: 0,
       totalTokens: 0,
     };
-    console.log("hola");
 
-    // Send metering data
-    await sendMeteringData(
-      createMeteringRequest(
-        transactionId,
-        modelName,
-        estimatedTokenCounts,
-        "STOP",
-        formatTimestamp(startTime),
-        formatTimestamp(endTime),
-        duration,
-        OperationType.CHAT,
-        true,
-        timeToFirstToken,
-        usageMetadata
-      ),
-      REVENIUM_API_KEY || "",
-      REVENIUM_BASE_URL
-    );
+    // Send metering data (only if API key is available)
+    if (REVENIUM_API_KEY) {
+      try {
+        await sendMeteringData(
+          createMeteringRequest(
+            transactionId,
+            modelName,
+            estimatedTokenCounts,
+            "STOP",
+            formatTimestamp(startTime),
+            formatTimestamp(endTime),
+            duration,
+            OperationType.CHAT,
+            true,
+            timeToFirstToken,
+            usageMetadata
+          ),
+          REVENIUM_API_KEY,
+          REVENIUM_BASE_URL
+        );
+      } catch (error) {
+        logger.warning(
+          "Failed to send metering data, but continuing with response",
+          { error }
+        );
+      }
+    } else {
+      logger.debug("Skipping metering data send - no API key available");
+    }
 
     // Clean up stream tracker
     streamTrackers.delete(transactionId);

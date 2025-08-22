@@ -56,9 +56,6 @@ async function googleAIBasicExample(): Promise<boolean> {
     console.log(`✅ Response: ${result.response.text().substring(0, 100)}...`);
     console.log("✅ Response received successfully");
 
-    // Verificar si el middleware interceptó
-    console.log("🔍 Checking if middleware intercepted the call...");
-
     return true;
   } catch (error) {
     console.log(`❌ Google AI test failed: ${error}`);
