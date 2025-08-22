@@ -1,10 +1,3 @@
-/**
- * Common logger for Google AI middleware.
- *
- * This module provides consistent logging functionality used across both
- * Google AI SDK and Vertex AI SDK middleware implementations.
- */
-
 import { LEVELS, levels_array } from "../utils/constants/levels";
 
 export class Logger {

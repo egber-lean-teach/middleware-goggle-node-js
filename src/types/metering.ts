@@ -1,7 +1,6 @@
 import { UsageMetadata } from "./usageMetadata";
 
 export interface MeteringRequest {
-  /** Request payload for Revenium metering API. */
   cacheCreationTokenCount: number;
   cacheReadTokenCount: number;
   inputTokenCost: number | null;

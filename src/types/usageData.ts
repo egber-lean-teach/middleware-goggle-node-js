@@ -4,13 +4,13 @@ export interface UsageData {
   inputTokenCount: number;
   outputTokenCount: number;
   totalTokenCount: number;
-  operationType: string; // OperationType value
+  operationType: string;
   stopReason: string;
   transactionId: string;
   model: string;
-  provider: string; // Always "Google"
-  modelSource: string; // Always "GOOGLE"
-  sdkType: Provider; // Which SDK was used
+  provider: string;
+  modelSource: string;
+  sdkType: Provider;
   requestTime: string;
   responseTime: string;
   completionStartTime: string;

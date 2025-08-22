@@ -1,5 +1,4 @@
 export interface UsageMetadata {
-  /** Optional metadata for enhanced usage tracking. */
   traceId?: string;
   taskType?: string;
   subscriberEmail?: string;

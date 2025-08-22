@@ -1,5 +1,1 @@
-/**
- * Google AI module exports.
- */
-
-export * from './middleware';
+export * from "./middleware";

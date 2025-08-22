@@ -4,7 +4,6 @@ import { TokenCounts } from "./tokenCounts";
 import { UsageMetadata } from "./usageMetadata";
 
 export interface RequestContext {
-  /** Context information for API requests. */
   transactionId: string;
   startTime: Date;
   model: ModelInfo;
@@ -13,7 +12,6 @@ export interface RequestContext {
 }
 
 export interface ResponseContext {
-  /** Context information for API responses. */
   endTime: Date;
   duration: number;
   tokenCounts: TokenCounts;
@@ -23,7 +21,6 @@ export interface ResponseContext {
 }
 
 export interface MiddlewareContext {
-  /** Complete context for middleware operations. */
   request: RequestContext;
   response: ResponseContext;
   provider: Provider;

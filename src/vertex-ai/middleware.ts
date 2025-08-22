@@ -1,10 +1,3 @@
-/**
- * Vertex AI SDK middleware for Revenium metering.
- *
- * This module provides middleware functionality for the @google-cloud/aiplatform package,
- * automatically tracking usage and sending metering data to Revenium.
- */
-
 import { logger } from "../models";
 import {
   OperationType,
