@@ -5,6 +5,8 @@
  * Google AI SDK and Vertex AI SDK middleware implementations.
  */
 
+import { LEVELS, levels_array } from "../utils/constants/levels";
+
 export class Logger {
   private logLevel: string;
 
@@ -13,9 +15,8 @@ export class Logger {
   }
 
   private shouldLog(level: string): boolean {
-    const levels = ["DEBUG", "INFO", "WARNING", "ERROR"];
-    const currentLevel = levels.indexOf(this.logLevel);
-    const messageLevel = levels.indexOf(level);
+    const currentLevel = levels_array.indexOf(this.logLevel);
+    const messageLevel = levels_array.indexOf(level);
     return messageLevel >= currentLevel;
   }
 
@@ -24,8 +25,8 @@ export class Logger {
     message: string,
     ...args: any[]
   ): string {
-    const timestamp = new Date().toISOString();
-    const prefix = `[${timestamp}] [Revenium] [${level}]`;
+    const timestamp: string = new Date().toISOString();
+    const prefix: string = `[${timestamp}] [Revenium] [${level}]`;
 
     if (args.length > 0) {
       return `${prefix} ${message} ${args
@@ -34,41 +35,39 @@ export class Logger {
         )
         .join(" ")}`;
     }
-
     return `${prefix} ${message}`;
   }
 
   debug(message: string, ...args: any[]): void {
-    if (this.shouldLog("DEBUG")) {
-      console.debug(this.formatMessage("DEBUG", message, ...args));
+    if (this.shouldLog(LEVELS.DEBUG)) {
+      console.debug(this.formatMessage(LEVELS.DEBUG, message, ...args));
     }
   }
 
   info(message: string, ...args: any[]): void {
-    if (this.shouldLog("INFO")) {
-      console.info(this.formatMessage("INFO", message, ...args));
+    if (this.shouldLog(LEVELS.INFO)) {
+      console.info(this.formatMessage(LEVELS.INFO, message, ...args));
     }
   }
 
   warning(message: string, ...args: any[]): void {
-    if (this.shouldLog("WARNING")) {
-      console.warn(this.formatMessage("WARNING", message, ...args));
+    if (this.shouldLog(LEVELS.WARNING)) {
+      console.warn(this.formatMessage(LEVELS.WARNING, message, ...args));
     }
   }
 
   error(message: string, ...args: any[]): void {
-    if (this.shouldLog("ERROR")) {
-      console.error(this.formatMessage("ERROR", message, ...args));
+    if (this.shouldLog(LEVELS.ERROR)) {
+      console.error(this.formatMessage(LEVELS.ERROR, message, ...args));
     }
   }
 
   setLogLevel(level: string): void {
-    const validLevels = ["DEBUG", "INFO", "WARNING", "ERROR"];
-    if (validLevels.includes(level.toUpperCase())) {
+    if (levels_array.includes(level.toUpperCase())) {
       this.logLevel = level.toUpperCase();
     } else {
       this.warning(`Invalid log level: ${level}. Using INFO instead.`);
-      this.logLevel = "INFO";
+      this.logLevel = LEVELS.INFO;
     }
   }
 
@@ -76,3 +75,7 @@ export class Logger {
     return this.logLevel;
   }
 }
+
+const logger = new Logger();
+
+export { logger };

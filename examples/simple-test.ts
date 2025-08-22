@@ -18,21 +18,16 @@
  */
 
 import { config } from "dotenv";
-import { Logger } from "../src/common/logger";
 import "../src/index"; // Import middleware to activate automatic tracking
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Load environment variables from .env file
 config();
-
-const logger = new Logger();
 
 async function googleAIBasicExample(): Promise<boolean> {
   /**🔄 Zero-Config Integration with Google AI SDK*/
   console.log("\n🤖 Google AI SDK - Basic Example");
   console.log("=".repeat(50));
 
-  // Check required environment variables
   const googleApiKey = process.env.GOOGLE_API_KEY;
   const reveniumKey = process.env.REVENIUM_METERING_API_KEY;
 
@@ -53,22 +48,15 @@ async function googleAIBasicExample(): Promise<boolean> {
   }
 
   try {
-    // Middleware is already imported above - automatic tracking is active
-
     const genAI = new GoogleGenerativeAI(googleApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-001" });
-
-    // Simple API call - automatically tracked!
     const result = await model.generateContent(
       "What is the meaning of life, the universe and everything?"
     );
 
     console.log(`✅ Response: ${result.response.text().substring(0, 100)}...`);
-
-    // Show token usage (if available)
     console.log("✅ Response received successfully");
     console.log("📊 Token usage will be tracked by the middleware");
-
     console.log("🎉 Zero-config integration successful!");
     console.log("   Your usage is automatically tracked in Revenium");
     return true;
@@ -197,8 +185,8 @@ async function main(): Promise<void> {
   console.log("🚀 Starting Revenium Google AI Middleware Tests");
   console.log("=".repeat(60));
 
-  let successCount = 0;
-  let totalTests = 4;
+  let successCount: number = 0;
+  const totalTests: number = 4;
 
   // Run Google AI SDK tests
   if (await googleAIBasicExample()) successCount++;

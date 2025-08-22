@@ -5,27 +5,25 @@
  * automatically tracking usage and sending metering data to Revenium.
  */
 
-import { Logger } from "../common/logger";
+import { logger } from "../models";
 import {
   OperationType,
   Provider,
   UsageMetadata,
   StreamTracker,
-} from "../common/types";
+} from "../types";
 import {
   generateTransactionId,
   formatTimestamp,
   calculateDurationMs,
-  extractVertexAITokenCounts,
   extractStopReason,
   extractModelName,
   extractUsageMetadata,
   createMeteringRequest,
   sendMeteringData,
-} from "../common/utils";
-import { ConfigurationError, StreamTrackingError } from "../common/exceptions";
-
-const logger = new Logger();
+} from "../utils";
+import { ConfigurationError, StreamTrackingError } from "../models";
+import { extractVertexAITokenCounts } from "../utils/extractVertexAITokenCounts";
 
 // Configuration
 const REVENIUM_API_KEY = process.env.REVENIUM_METERING_API_KEY;

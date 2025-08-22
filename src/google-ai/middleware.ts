@@ -1,35 +1,34 @@
 /**
  * Google AI SDK middleware for Revenium metering.
- * 
+ *
  * This module provides middleware functionality for the @google/generative-ai package,
  * automatically tracking usage and sending metering data to Revenium.
  */
 
-import { Logger } from '../common/logger';
-import { 
-  OperationType, 
-  Provider, 
+import { logger } from "../models";
+import {
+  OperationType,
+  Provider,
   UsageMetadata,
-  StreamTracker 
-} from '../common/types';
-import { 
-  generateTransactionId, 
-  formatTimestamp, 
+  StreamTracker,
+} from "../types";
+import {
+  formatTimestamp,
   calculateDurationMs,
   extractGoogleAITokenCounts,
   extractStopReason,
   extractModelName,
   extractUsageMetadata,
   createMeteringRequest,
-  sendMeteringData
-} from '../common/utils';
-import { ConfigurationError, StreamTrackingError } from '../common/exceptions';
-
-const logger = new Logger();
+  sendMeteringData,
+} from "../utils";
+import { ConfigurationError, StreamTrackingError } from "../models";
+import { generateTransactionId } from "../utils";
 
 // Configuration
 const REVENIUM_API_KEY = process.env.REVENIUM_METERING_API_KEY;
-const REVENIUM_BASE_URL = process.env.REVENIUM_METERING_BASE_URL || 'https://api.revenium.io/meter/v2';
+const REVENIUM_BASE_URL =
+  process.env.REVENIUM_METERING_BASE_URL || "https://api.revenium.io/meter/v2";
 
 // Stream tracking storage
 const streamTrackers = new Map<string, StreamTracker>();
@@ -39,41 +38,48 @@ const streamTrackers = new Map<string, StreamTracker>();
  */
 function initializeGoogleAIMiddleware(): void {
   if (!REVENIUM_API_KEY) {
-    logger.warning('REVENIUM_METERING_API_KEY not found - metering will be disabled');
+    logger.warning(
+      "REVENIUM_METERING_API_KEY not found - metering will be disabled"
+    );
     return;
   }
 
   try {
     // Get the GoogleGenerativeAI class
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    
+    const { GoogleGenerativeAI } = require("@google/generative-ai");
+
     if (!GoogleGenerativeAI) {
-      throw new Error('GoogleGenerativeAI class not found');
+      throw new Error("GoogleGenerativeAI class not found");
     }
 
     // Store original methods
-    const originalGetGenerativeModel = GoogleGenerativeAI.prototype.getGenerativeModel;
-    const originalGetEmbeddingModel = GoogleGenerativeAI.prototype.getEmbeddingModel;
+    const originalGetGenerativeModel =
+      GoogleGenerativeAI.prototype.getGenerativeModel;
+    const originalGetEmbeddingModel =
+      GoogleGenerativeAI.prototype.getEmbeddingModel;
 
     // Override getGenerativeModel method
-    GoogleGenerativeAI.prototype.getGenerativeModel = function(options: any) {
+    GoogleGenerativeAI.prototype.getGenerativeModel = function (options: any) {
       const model = originalGetGenerativeModel.call(this, options);
-      
+
       // Store original methods
       const originalGenerateContent = model.generateContent;
       const originalGenerateContentStream = model.generateContentStream;
 
       // Override generateContent method
-      model.generateContent = async function(request: any) {
+      model.generateContent = async function (request: any) {
         const startTime = new Date();
         const transactionId = generateTransactionId();
         const usageMetadata = extractUsageMetadata(request, this);
-        
-        logger.debug('Google AI generateContent called', { transactionId, model: options.model });
+
+        logger.debug("Google AI generateContent called", {
+          transactionId,
+          model: options.model,
+        });
 
         try {
           const result = await originalGenerateContent.call(this, request);
-          
+
           // Extract token counts and other data
           const tokenCounts = extractGoogleAITokenCounts(result);
           const stopReason = extractStopReason(result);
@@ -100,22 +106,30 @@ function initializeGoogleAIMiddleware(): void {
             REVENIUM_BASE_URL
           );
 
-          logger.debug('Google AI generateContent metering completed', { transactionId });
+          logger.debug("Google AI generateContent metering completed", {
+            transactionId,
+          });
           return result;
         } catch (error) {
-          logger.error('Google AI generateContent failed', { transactionId, error });
+          logger.error("Google AI generateContent failed", {
+            transactionId,
+            error,
+          });
           throw error;
         }
       };
 
       // Override generateContentStream method
-      model.generateContentStream = async function(request: any) {
+      model.generateContentStream = async function (request: any) {
         const startTime = new Date();
         const transactionId = generateTransactionId();
         const usageMetadata = extractUsageMetadata(request, this);
         let firstTokenTime: Date | undefined;
-        
-        logger.debug('Google AI generateContentStream called', { transactionId, model: options.model });
+
+        logger.debug("Google AI generateContentStream called", {
+          transactionId,
+          model: options.model,
+        });
 
         // Create stream tracker
         const streamTracker: StreamTracker = {
@@ -123,19 +137,22 @@ function initializeGoogleAIMiddleware(): void {
           startTime,
           firstTokenTime,
           isComplete: false,
-          usageMetadata
+          usageMetadata,
         };
         streamTrackers.set(transactionId, streamTracker);
 
         try {
-          const result = await originalGenerateContentStream.call(this, request);
-          
+          const result = await originalGenerateContentStream.call(
+            this,
+            request
+          );
+
           // Override the stream to track first token and completion
           const originalStream = result.stream;
           const wrappedStream = {
             [Symbol.asyncIterator]: async function* () {
               let isFirstToken = true;
-              
+
               try {
                 for await (const chunk of originalStream) {
                   if (isFirstToken) {
@@ -155,21 +172,24 @@ function initializeGoogleAIMiddleware(): void {
                   usageMetadata
                 );
               }
-            }
+            },
           };
 
           // Replace the stream property
-          Object.defineProperty(result, 'stream', {
+          Object.defineProperty(result, "stream", {
             value: wrappedStream,
             writable: false,
-            configurable: false
+            configurable: false,
           });
 
           return result;
         } catch (error) {
           // Clean up stream tracker on error
           streamTrackers.delete(transactionId);
-          logger.error('Google AI generateContentStream failed', { transactionId, error });
+          logger.error("Google AI generateContentStream failed", {
+            transactionId,
+            error,
+          });
           throw error;
         }
       };
@@ -178,26 +198,33 @@ function initializeGoogleAIMiddleware(): void {
     };
 
     // Override getEmbeddingModel method
-    GoogleGenerativeAI.prototype.getEmbeddingModel = function(options: any) {
+    GoogleGenerativeAI.prototype.getEmbeddingModel = function (options: any) {
       const model = originalGetEmbeddingModel.call(this, options);
-      
+
       // Store original method
       const originalEmbedContent = model.embedContent;
 
       // Override embedContent method
-      model.embedContent = async function(request: any) {
+      model.embedContent = async function (request: any) {
         const startTime = new Date();
         const transactionId = generateTransactionId();
         const usageMetadata = extractUsageMetadata(request, this);
-        
-        logger.debug('Google AI embedContent called', { transactionId, model: options.model });
+
+        logger.debug("Google AI embedContent called", {
+          transactionId,
+          model: options.model,
+        });
 
         try {
           const result = await originalEmbedContent.call(this, request);
-          
+
           // For embeddings, we can't get token counts from Google AI SDK
-          const tokenCounts = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-          const stopReason = 'STOP';
+          const tokenCounts = {
+            inputTokens: 0,
+            outputTokens: 0,
+            totalTokens: 0,
+          };
+          const stopReason = "STOP";
           const modelName = extractModelName(result, options.model);
           const endTime = new Date();
           const duration = calculateDurationMs(startTime, endTime);
@@ -221,10 +248,15 @@ function initializeGoogleAIMiddleware(): void {
             REVENIUM_BASE_URL
           );
 
-          logger.debug('Google AI embedContent metering completed', { transactionId });
+          logger.debug("Google AI embedContent metering completed", {
+            transactionId,
+          });
           return result;
         } catch (error) {
-          logger.error('Google AI embedContent failed', { transactionId, error });
+          logger.error("Google AI embedContent failed", {
+            transactionId,
+            error,
+          });
           throw error;
         }
       };
@@ -232,10 +264,13 @@ function initializeGoogleAIMiddleware(): void {
       return model;
     };
 
-    logger.info('Google AI SDK middleware activated successfully');
+    logger.info("Google AI SDK middleware activated successfully");
   } catch (error) {
-    logger.error('Failed to activate Google AI SDK middleware:', error);
-    throw new ConfigurationError('Failed to activate Google AI SDK middleware', error as Error);
+    logger.error("Failed to activate Google AI SDK middleware:", error);
+    throw new ConfigurationError(
+      "Failed to activate Google AI SDK middleware",
+      error as Error
+    );
   }
 }
 
@@ -252,16 +287,24 @@ async function handleStreamCompletion(
   try {
     const streamTracker = streamTrackers.get(transactionId);
     if (!streamTracker) {
-      logger.warning('Stream tracker not found for transaction', { transactionId });
+      logger.warning("Stream tracker not found for transaction", {
+        transactionId,
+      });
       return;
     }
 
     const endTime = new Date();
     const duration = calculateDurationMs(startTime, endTime);
-    const timeToFirstToken = firstTokenTime ? calculateDurationMs(startTime, firstTokenTime) : 0;
+    const timeToFirstToken = firstTokenTime
+      ? calculateDurationMs(startTime, firstTokenTime)
+      : 0;
 
     // For streaming, we estimate token counts (Google AI SDK doesn't provide them during streaming)
-    const estimatedTokenCounts = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+    const estimatedTokenCounts = {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+    };
 
     // Send metering data
     await sendMeteringData(
@@ -269,7 +312,7 @@ async function handleStreamCompletion(
         transactionId,
         modelName,
         estimatedTokenCounts,
-        'STOP',
+        "STOP",
         formatTimestamp(startTime),
         formatTimestamp(endTime),
         duration,
@@ -284,10 +327,15 @@ async function handleStreamCompletion(
 
     // Clean up stream tracker
     streamTrackers.delete(transactionId);
-    
-    logger.debug('Google AI stream completion metering completed', { transactionId });
+
+    logger.debug("Google AI stream completion metering completed", {
+      transactionId,
+    });
   } catch (error) {
-    logger.error('Failed to handle stream completion metering', { transactionId, error });
+    logger.error("Failed to handle stream completion metering", {
+      transactionId,
+      error,
+    });
     // Clean up stream tracker on error
     streamTrackers.delete(transactionId);
   }
