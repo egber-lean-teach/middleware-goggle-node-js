@@ -370,7 +370,7 @@ npm run clean
 
    ```bash
    # Create .env file
-   cp env.example .env
+   cp .env.example .env
 
    # Edit .env with your keys
    REVENIUM_METERING_API_KEY=your_revenium_key

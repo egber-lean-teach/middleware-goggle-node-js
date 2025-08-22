@@ -321,7 +321,7 @@ async function handleStreamCompletion(
         timeToFirstToken,
         usageMetadata
       ),
-      REVENIUM_API_KEY,
+      REVENIUM_API_KEY || "",
       REVENIUM_BASE_URL
     );
 
