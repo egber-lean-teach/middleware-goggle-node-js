@@ -19,15 +19,19 @@ import { ConfigurationError, StreamTrackingError } from "../models";
 import { generateTransactionId } from "../utils";
 
 // Configuration
-const REVENIUM_API_KEY = process.env.REVENIUM_METERING_API_KEY;
-const REVENIUM_BASE_URL =
+const REVENIUM_API_KEY: string | undefined =
+  process.env.REVENIUM_METERING_API_KEY;
+const REVENIUM_BASE_URL: string =
   process.env.REVENIUM_METERING_BASE_URL || "https://api.revenium.io/meter/v2";
 
 // Stream tracking storage
-const streamTrackers = new Map<string, StreamTracker>();
+const streamTrackers: Map<string, StreamTracker> = new Map<
+  string,
+  StreamTracker
+>();
 
 // Track if middleware has been initialized to avoid double initialization
-let middlewareInitialized = false;
+let middlewareInitialized: boolean = false;
 
 /**
  * Initialize Google AI SDK middleware.
@@ -43,7 +47,6 @@ function initializeGoogleAIMiddleware(): void {
     logger.warning(
       "REVENIUM_METERING_API_KEY not found - metering will be disabled but middleware will still intercept calls"
     );
-    // Don't return - continue with middleware setup
   }
 
   try {

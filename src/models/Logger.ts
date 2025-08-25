@@ -8,8 +8,8 @@ export class Logger {
   }
 
   private shouldLog(level: string): boolean {
-    const currentLevel = levels_array.indexOf(this.logLevel);
-    const messageLevel = levels_array.indexOf(level);
+    const currentLevel: number = levels_array.indexOf(this.logLevel);
+    const messageLevel: number = levels_array.indexOf(level);
     return messageLevel >= currentLevel;
   }
 
